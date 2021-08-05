@@ -1,0 +1,182 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Document</title>
+    <style>
+        body{
+            background-color: rgb(31, 31, 36);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        table{
+            color: white;
+            margin: auto;
+            border: 1px solid white;
+            font-size: 30px;
+        }
+        table *{
+            border: 1px solid white;
+        }
+        th{
+            padding: 10px;
+        }
+        td{
+            padding: 10px;
+            font-size: 25px;
+        }
+        .gomb{
+            background-color: rgb(29, 145, 29);
+            color: white;
+        }
+        .gomb:active{
+            background-color: rgb(57, 204, 57);
+        }
+        input{
+            border-radius: 3px;
+        }
+        .remove{
+            border: none;
+            float: right;
+            margin-right: 20px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 30px;
+            color: rgb(146, 71, 71);
+        }
+        .remove:active{
+            color:red;
+        }
+        .dones{
+            width: 25px;
+            height: 25px;
+            margin-top: 10px;
+            margin-left: 10px;
+            
+        }
+        .dones:checked{
+            content: '✓';
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <thead>
+            <th>Name</th>
+            <th>Time</th>
+            <th>Done?</th>
+        </thead>
+        <tbody id="tbody">
+            <tr>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr></tr>
+            <tr onclick="console.log(this)">
+                <td>
+                    <input type="text" name="" id="name">
+                </td>
+                <td style="text-align: center;">
+                    <input type="text" name="" id="time" onkeypress='return event.charCode >= 48 && event.charCode <= 57' maxlength="2" size="2">
+                </td>
+                <td style="text-align: center;"> <input type="button" value="Add" class="gomb"></td>
+
+            </tr>
+        </tfoot>
+    </table>
+    <script>
+        function add_row(name,time,done,id){
+            var template = `<tr class="todo_row" id="todo${id}">
+                <td>
+                    ${name}
+                </td>
+                <td style="text-align:center;">
+                    ${time} hours
+                </td>
+                <td>
+                    <input type="checkbox" name="" id="checkbox${id}" ${done == "1" ? "checked" : ""} class="dones" onclick="update_row(${id})">
+                    <span class="remove" onclick="remove_row(${id});">✖</span>
+                </td>
+            </tr>`
+            document.getElementById("tbody").innerHTML += template
+        }
+        var rm_counter = 0
+        function set_current_state(obj){
+            var l = obj.length;
+            for(var i = 0; i < l; ++i){
+                var o = obj[i.toString()]
+                console.log(o)
+                add_row(o["name"],o["time"],o["done"],o["id"])
+            }
+        }
+        function get_todos(){
+            $.ajax({
+                type:"GET",
+                url:"/get_todos",
+                success:function(res){
+                    set_current_state(JSON.parse(res))
+                }
+            })
+        }
+        function update_row(id) {
+
+            $.ajax({
+                type:"POST",
+                url:"/update_row",
+                data:{
+                    id:id,
+                    state:$("#checkbox"+id).is(":checked") ? "1" : "0"
+                },
+                success: ()=>{
+                    return
+                }
+            })
+          }
+        function remove_row(id) {
+            $("#todo"+id.toString()).fadeOut(300).blur(function () {
+                $("#todo"+id.toString()).remove();
+            });
+
+            $.ajax({
+                type:"POST",
+                url:"/remove_row",
+                data:{
+                    id:id,
+                },
+                success:()=>{
+                    return
+                }
+
+            })
+        }
+    
+        $(".gomb").click(function () {
+            
+            var name = document.getElementById("name").value;
+            var time = document.getElementById("time").value;
+            var form_data = {
+                "name":name,
+                "time":time
+            }
+            console.log(name)
+            if(name == ""){
+                return
+            }
+            $.ajax({
+                type:"POST",
+                url:"/add_todo",
+                data:form_data,
+                success: function(){
+                    return
+                }
+            })
+            ;
+            add_row(name,time,"0",$(".todo_row").length)
+            
+        })
+        window.onload = get_todos;
+    </script>
+</body>
+</html>
